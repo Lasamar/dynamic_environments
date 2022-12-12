@@ -1,0 +1,25 @@
+name: Manual uninstall
+
+on: 
+  workflow_dispatch:
+    inputs:
+      directory:
+        description: 'Environment to delete. The following path will prefix the folder name: environments/'
+        required: true
+        type: string
+
+jobs:
+    helm_deploy:
+        name: Helm deploy
+        runs-on: [self-hosted,  base-runners ]
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v3
+            - uses: azure/setup-helm@v3
+              with:
+                 version: 'v3.2.1'
+              id: install_helm
+            - name: helm uninstall
+              run: |
+                helm -n default uninstall ${{ inputs.directory }}
+ 

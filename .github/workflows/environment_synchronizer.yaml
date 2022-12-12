@@ -1,0 +1,73 @@
+name: Environment Synchronizer
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - environments/**
+
+jobs:
+    changes:
+      runs-on: [self-hosted,  base-runners ]
+      outputs:
+        directories: ${{ steps.transform.outputs.directories }}
+      steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: dorny/paths-filter@v2
+        id: filter
+        with:
+          base: main
+          list-files: shell
+          filters: |
+            environments:
+              - environments/**
+      - name: transform to directories
+        id: transform
+        continue-on-error: false
+        run: |
+          echo ${{ steps.filter.outputs.environments_files }}
+          folders=()
+          for f in ${{ steps.filter.outputs.environments_files }}; \
+            do \
+              action=$(echo $(dirname $f) | cut -d / -f 2 | cut -d _ -f 1)
+              if [[ -d $(dirname $f) && ( $action = 'upgrade' || $action = 'uninstall' ) ]]; \
+              then \
+                echo "Adding $(dirname $f) to folders"; \
+                folders+=($(dirname $f)); \
+              fi \
+          done
+          unique_folders=($(printf "%s\n" "${folders[@]}" | sort -u | tr '\n' ' '))
+          echo "directories=$(jq --compact-output --null-input '$ARGS.positional' --args -- ${unique_folders[@]})" >> $GITHUB_OUTPUT
+      - name: test directories
+        run: echo ${{ steps.transform.outputs.directories }}
+
+    helm_synch:
+      runs-on: [self-hosted,  base-runners ]
+      needs: changes
+      strategy:
+        fail-fast: false
+        matrix:
+          directory: ${{ fromJSON(needs.changes.outputs.directories) }}
+      steps:
+          - name: Checkout
+            uses: actions/checkout@v3
+          - uses: azure/setup-helm@v3
+            with:
+               version: 'v3.2.1'
+            id: install_helm
+          - id: folder_parser
+            run: |
+              echo "action=$(echo '${{ matrix.directory }}' | cut -d / -f 2 | cut -d _ -f 1)" >> $GITHUB_OUTPUT
+              echo "release_name=$(echo '${{ matrix.directory }}' | cut -d / -f 2 | cut -d _ -f 2)" >> $GITHUB_OUTPUT
+          - name: helm upgrade
+            if: steps.folder_parser.outputs.action == 'upgrade'
+            env:
+                values_file: "${{ matrix.directory }}/values.yaml"
+            run: |
+                helm upgrade -n default ${{ steps.folder_parser.outputs.release_name }} --install --wait './helm_chart' -f $values_file
+          - name: helm uninstall
+            if: steps.folder_parser.outputs.action == 'uninstall'
+            run: |
+                helm -n default uninstall ${{ steps.folder_parser.outputs.release_name }}
