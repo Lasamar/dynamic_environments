@@ -1,0 +1,11 @@
+{{- if .Values.envCM.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ include "deploy.name" . }}-env-cm"
+  namespace: {{ include "deploy.namespace" . }}
+{{- with .Values.envCM.data }}
+data:
+  {{ toYaml . | nindent 4 }}
+{{- end }}
+{{- end}}

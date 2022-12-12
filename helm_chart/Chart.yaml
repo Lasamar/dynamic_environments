@@ -1,0 +1,5 @@
+apiVersion: v2
+description: Base helm chart to deploy dockerized applications inside eks
+name: demo-dynamic-environments
+type: application
+version: 0.1.0

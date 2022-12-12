@@ -1,0 +1,65 @@
+# Default values for deploy.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1 # Number of replica desired
+imageConfig:
+  image: "bithavoc/hello-world-env" # RegistryRepository of the docker image.
+  pullPolicy: IfNotPresent # Pull policy for the image
+  tag: "latest"
+
+namespace: "" # Name of the environment associated with this values.  Otherwise it will use the release.name as default one
+
+nameOverride: "" # Wished name for the application. Otherwise it will use the release.name as default one.
+
+serviceAccount:
+  create: true # Specifies whether a service account should be created
+  annotations: {} # Annotations to add to the service account
+  name: ""   # The name of the service account to use. If not set and create is true, a name is generated using the fullname template
+
+podAnnotations: {} # Annotations to add to the pod
+
+podSecurityContext: {}  # Pod security context
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: NodePort # Service type
+  port: 3000 # Service port
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 5
+  resource: cpu
+  targetAverageUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+envCM:
+  enabled: true
+  data: 
+    MESSAGE: "manual workflow"
+
+envSecret:
+  enabled: false
+  key: 

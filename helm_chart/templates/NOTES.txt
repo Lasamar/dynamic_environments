@@ -1,0 +1,8 @@
+To communicate with the released container:
+- Make sure your are able to communicate with the eks cluster from your local machine (kubectl required)
+    If you have the AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY export them in your local environment and then run
+    aws eks --region <region of the cluster> update-kubeconfig --name <cluster_name>
+- Execute a kubernetes port-forward:
+  kubectl -n {{ include "deploy.namespace" . }} port-forward service/{{ include "deploy.name" . }} 8080:{{ .Values.service.port }}
+
+If your local port 8080 is busy please switch to a free one.

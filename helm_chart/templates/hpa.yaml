@@ -1,0 +1,23 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "deploy.name" . }}
+  namespace: {{ include "deploy.namespace" . }}
+  labels:
+    {{ include "deploy.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "deploy.name" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: {{ .Values.autoscaling.resource }}
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.autoscaling.targetAverageUtilizationPercentage }}
+{{- end }}

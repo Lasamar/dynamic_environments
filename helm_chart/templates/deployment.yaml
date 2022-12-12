@@ -1,0 +1,75 @@
+{{- $repository := .Values.imageConfig.image | required ".Values.imageConfig.image is required." }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "deploy.name" . }}
+  namespace: {{ include "deploy.namespace" . }}
+  labels:
+    {{ include "deploy.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{ include "deploy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        rollme: {{ randAlphaNum 5 | quote }}
+      {{- with .Values.podAnnotations }}
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{ include "deploy.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "deploy.serviceAccountName" . }}
+      securityContext:
+        {{ toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{ toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.imageConfig.image }}:{{ .Values.imageConfig.tag }}"
+          imagePullPolicy: {{ .Values.imageConfig.pullPolicy }}
+          envFrom:
+            {{- if .Values.envSecret.enabled }}
+            - secretRef:
+                name: "{{ include "deploy.name" . }}-env-secret"
+            {{- end}}
+            {{- if .Values.envCM.enabled }}
+            - configMapRef:
+                name: "{{ include "deploy.name" . }}-env-cm"
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port | default 80}}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.imageConfig.livenessProbePath | default "/" }}
+              port: {{ .Values.service.port | default 80}}
+            initialDelaySeconds: 5
+            periodSeconds: 25
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.imageConfig.readinessProbePath | default "/" }}
+              port: {{ .Values.service.port | default 80}}
+            initialDelaySeconds: 5
+            periodSeconds: 45
+            timeoutSeconds: 5
+          resources:
+            {{ toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
