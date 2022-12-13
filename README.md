@@ -1,5 +1,11 @@
 # Dynamic environments
 
+⚠️ WARNING ⚠️ 
+Creating an eks cluster comes with costs. 
+The base setup it's pretty cheap but can potentially escalate very fast depending on the usage. 
+It's possible to test the GitHub workflow and the Dynamic environment demo by using whatever other kind of kubernetes cluster it's available. 
+I will try to provide a generic kubernetes terraform setup as soon as I can.
+
 ## Objective:
 
 The object of this demo is to create an infrastructure that support the deploy of dockerized web applications directly from Github.
